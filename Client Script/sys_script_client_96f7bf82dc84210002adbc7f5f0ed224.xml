@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update sys_domain="global" table="sys_script_client"><sys_script_client action="INSERT_OR_UPDATE"><active>true</active><applies_extended>false</applies_extended><condition/><description>Check to see if the template corresponds to the chosen table.</description><field>destination_table</field><global>true</global><messages/><name>Postmaster - Check Template</name><script><![CDATA[function onChange(control, oldValue, newValue, isLoading, isTemplate) {
+	if (isLoading)
+		return;
+	g_form.clearMessages();
+	if (newValue == '')
+		return;
+	var template = g_form.getReference('template', callback);
+}
+
+//Process returned template record
+function callback(template){
+	var destTable = g_form.getValue('destination_table');
+	if (template.table != destTable && template.table != 'task')
+		g_form.setValue('template','');
+}]]></script><sys_class_name>sys_script_client</sys_class_name><sys_created_by>ben.hollifield@snc_SHARE</sys_created_by><sys_created_on>2014-04-15 00:18:11</sys_created_on><sys_domain>global</sys_domain><sys_id>96f7bf82dc84210002adbc7f5f0ed224</sys_id><sys_mod_count>3</sys_mod_count><sys_overrides/><sys_updated_by>ben.hollifield@snc_SHARE</sys_updated_by><sys_updated_on>2014-04-15 15:08:37</sys_updated_on><table>email_routing_rule</table><type>onChange</type><ui_type>0</ui_type><view/></sys_script_client><sys_app_file action="INSERT_OR_UPDATE"><customer_update>true</customer_update><publish_override/><replace_on_upgrade>false</replace_on_upgrade><restore/><sys_app/><sys_code>!!3{}/</sys_code><sys_created_by>ben.hollifield@snc_SHARE</sys_created_by><sys_created_on>2014-04-15 00:18:11</sys_created_on><sys_id>9af7bf82dc84210002adbc7f5f0ed224</sys_id><sys_mod_count>0</sys_mod_count><sys_name>Postmaster - Check Template</sys_name><sys_parent display_value="Email Routing Rule">1c6e610adc44210002adbc7f5f0ed285</sys_parent><sys_path>!!3{:/!!3{}/</sys_path><sys_policy/><sys_source_deleted>false</sys_source_deleted><sys_source_id>96f7bf82dc84210002adbc7f5f0ed224</sys_source_id><sys_source_table>sys_script_client</sys_source_table><sys_type>code</sys_type><sys_update_name>sys_script_client_96f7bf82dc84210002adbc7f5f0ed224</sys_update_name><sys_updated_by>ben.hollifield@snc_SHARE</sys_updated_by><sys_updated_on>2014-04-15 15:08:37</sys_updated_on></sys_app_file></record_update>
