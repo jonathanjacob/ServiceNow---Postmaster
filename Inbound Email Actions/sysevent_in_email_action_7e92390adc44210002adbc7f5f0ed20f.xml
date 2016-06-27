@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?><record_update sys_domain="global" table="sysevent_in_email_action"><sysevent_in_email_action action="INSERT_OR_UPDATE"><action>record_action</action><active>true</active><assignment_operator/><condition_script/><description/><event_name>email.read</event_name><filter_condition/><from/><name>Postmaster Email Router</name><order>0</order><reply_email/><required_roles/><script><![CDATA[routeIt();
+<?xml version="1.0" encoding="UTF-8"?><record_update sys_domain="global" table="sysevent_in_email_action"><sysevent_in_email_action action="INSERT_OR_UPDATE"><active>true</active><assignment_operator/><condition_script/><description/><event_name>email.read</event_name><from/><name>Postmaster Email Router</name><order>0</order><script><![CDATA[routeIt();
 
 function routeIt(){
 	var sysEmailRec = getMailRec(email.uid);
@@ -38,6 +38,8 @@ function checkCondition(gr, query) {
 	gr.recipients = gr.recipients.toLowerCase();
 	gr.subject = gr.subject.toLowerCase();
 	gr.body = gr.body.toLowerCase();
+	//May need to add more to Lower based on the filter conditions
+	gr.direct = gr.direct.toLowerCase();
 	return GlideFilter.checkRecord(gr,query);
 }
 
@@ -65,30 +67,41 @@ function createRec(rule, emailRec){
 	}
 	
 	//Apply template to created record
-	if (!rule.template.nil())
+	if (!rule.template.nil()){
 		newRec.applyTemplate(rule.template.name);
+	}
+	//Apply Encoded Query from Field driven template.
+	if (!rule.u_field_template.nil()) {
+		newRec.applyEncodedQuery(rule.u_field_template.toString());
+	}
 	
 	//Eval to apply email body and short description to the appropriate fields
 	eval("newRec." + rule.email_body_to + " = 'Received from: ' + email.origemail + ':  ' + email.body_text;");
 	eval("newRec." + rule.email_subject_to + " = email.subject;");
 	
 	//Apply other table-specific settings
-	if (rule.destination_table == 'incident')
+	if (rule.destination_table == 'incident'){
 		newRec.caller_id = gs.getUserID();
-	
-	//Apply script to record
-	if (rule.apply_script == true){
-		try{eval(rule.script);}
-		catch(err){}
+		newRec.contact_type = 'email';
 	}
-	
-	newRec.update();
-	
-	//Set 'target' field on sys_email record
-	emailRec.target_table = newRec.getTableName();
-	emailRec.instance = newRec.sys_id.toString();
-	emailRec.update();
-	
-	//Copy attachments from email to created record
-	GlideSysAttachment.copy('sys_email', emailRec.sys_id.toString(), newRec.getTableName(), newRec.sys_id.toString());
-}]]></script><stop_processing>true</stop_processing><sys_class_name>sysevent_in_email_action</sys_class_name><sys_created_by>ben.hollifield@snc_SHARE</sys_created_by><sys_created_on>2014-04-14 14:48:49</sys_created_on><sys_customer_update>true</sys_customer_update><sys_domain>global</sys_domain><sys_id>7e92390adc44210002adbc7f5f0ed20f</sys_id><sys_mod_count>4</sys_mod_count><sys_name>Postmaster Email Router</sys_name><sys_overrides/><sys_package/><sys_policy/><sys_replace_on_upgrade>false</sys_replace_on_upgrade><sys_scope display_value="Global">global</sys_scope><sys_update_name>sysevent_in_email_action_7e92390adc44210002adbc7f5f0ed20f</sys_update_name><sys_updated_by>ben.hollifield@snc_SHARE</sys_updated_by><sys_updated_on>2016-06-13 22:40:51</sys_updated_on><table>task</table><template/><type>new</type></sysevent_in_email_action></record_update>
+	if (rule.destination_table == 'ticket') {
+		//Static assignments
+		newRec.contact_type = 'email';
+	}
+		
+		//Apply script to record
+		if (rule.apply_script == true){
+			try{eval(rule.script);}
+			catch(err){}
+		}
+		
+		newRec.update();
+		
+		//Set 'target' field on sys_email record
+		emailRec.target_table = newRec.getTableName();
+		emailRec.instance = newRec.sys_id.toString();
+		emailRec.update();
+		
+		//Copy attachments from email to created record
+		GlideSysAttachment.copy('sys_email', emailRec.sys_id.toString(), newRec.getTableName(), newRec.sys_id.toString());
+	}]]></script><sys_class_name>sysevent_in_email_action</sys_class_name><sys_created_by>ben.hollifield@snc_SHARE</sys_created_by><sys_created_on>2014-04-14 14:48:49</sys_created_on><sys_customer_update>true</sys_customer_update><sys_domain>global</sys_domain><sys_id>7e92390adc44210002adbc7f5f0ed20f</sys_id><sys_mod_count>5</sys_mod_count><sys_name>Postmaster Email Router</sys_name><sys_overrides/><sys_package display_value="Global" source="global">global</sys_package><sys_policy/><sys_replace_on_upgrade>false</sys_replace_on_upgrade><sys_scope display_value="Global">global</sys_scope><sys_update_name>sysevent_in_email_action_7e92390adc44210002adbc7f5f0ed20f</sys_update_name><sys_updated_by>jjacob</sys_updated_by><sys_updated_on>2016-06-14 20:08:45</sys_updated_on><table>task</table><type>new</type></sysevent_in_email_action></record_update>
