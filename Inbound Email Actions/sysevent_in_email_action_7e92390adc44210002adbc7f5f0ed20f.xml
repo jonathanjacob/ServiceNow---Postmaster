@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update sys_domain="global" table="sysevent_in_email_action"><sysevent_in_email_action action="INSERT_OR_UPDATE"><action>record_action</action><active>true</active><assignment_operator/><condition_script/><description/><event_name>email.read</event_name><filter_condition/><from/><name>Postmaster Email Router</name><order>0</order><reply_email/><required_roles/><script><![CDATA[routeIt();
+
+function routeIt(){
+	var sysEmailRec = getMailRec(email.uid);
+	if (sysEmailRec){
+		var match = false;
+		var pmRule = new GlideRecord("email_routing_rule");
+		pmRule.addQuery("active", true);
+		pmRule.orderBy("order");
+		pmRule.query();
+		while (pmRule.next() && !match) {
+			if (checkCondition(sysEmailRec, pmRule.condition)){
+				createRec(pmRule, sysEmailRec);
+				match = true;
+				event.state="stop_processing";
+			}
+			//If no matching rule, continue with other Inbound actions
+		}
+	}
+}
+
+//Get the sys_email record, based on email uid
+function getMailRec(uid){
+	var mail = new GlideRecord("sys_email");
+	mail.addQuery("uid", uid);
+	mail.query();
+	if (mail.next()) {
+		return mail;
+	}
+	else{
+		gs.log('**** - No valid sys_email match found for incoming mail w/ uid ' + email.uid);
+	}
+	return;
+}
+
+//Check condition field for match
+function checkCondition(gr, query) {
+	gr.recipients = gr.recipients.toLowerCase();
+	gr.subject = gr.subject.toLowerCase();
+	gr.body = gr.body.toLowerCase();
+	return GlideFilter.checkRecord(gr,query);
+}
+
+//Create destination record
+function createRec(rule, emailRec){
+	var newRec;
+	//For service-catalog items, spawn proper REQ/RITM records and get appropriate record for template
+	if (rule.destination_table == 'sc_request' || rule.destination_table == 'sc_req_item'){
+		var cart = new Cart();
+		cart.addItem(rule.catalog_item);
+		newRec = cart.placeOrder();
+		if (rule.destination_table == 'sc_req_item'){
+			gs.sleep(3000); //Wait for the workflow to create the RITM
+			var recSysId = newRec.sys_id.toString();
+			newRec = new GlideRecord("sc_req_item");
+			newRec.addQuery("request", recSysId);
+			newRec.query();
+			if (newRec.next()){}
+			}
+	}
+	//For non-service-catalog items, spawn the appropriate record type
+	else{
+		newRec = new GlideRecord(rule.destination_table);
+		newRec.initialize();
+	}
+	
+	//Apply template to created record
+	if (!rule.template.nil())
+		newRec.applyTemplate(rule.template.name);
+	
+	//Eval to apply email body and short description to the appropriate fields
+	eval("newRec." + rule.email_body_to + " = 'Received from: ' + email.origemail + ':  ' + email.body_text;");
+	eval("newRec." + rule.email_subject_to + " = email.subject;");
+	
+	//Apply other table-specific settings
+	if (rule.destination_table == 'incident')
+		newRec.caller_id = gs.getUserID();
+	
+	//Apply script to record
+	if (rule.apply_script == true){
+		try{eval(rule.script);}
+		catch(err){}
+	}
+	
+	newRec.update();
+	
+	//Set 'target' field on sys_email record
+	emailRec.target_table = newRec.getTableName();
+	emailRec.instance = newRec.sys_id.toString();
+	emailRec.update();
+	
+	//Copy attachments from email to created record
+	GlideSysAttachment.copy('sys_email', emailRec.sys_id.toString(), newRec.getTableName(), newRec.sys_id.toString());
+}]]></script><stop_processing>true</stop_processing><sys_class_name>sysevent_in_email_action</sys_class_name><sys_created_by>ben.hollifield@snc_SHARE</sys_created_by><sys_created_on>2014-04-14 14:48:49</sys_created_on><sys_customer_update>true</sys_customer_update><sys_domain>global</sys_domain><sys_id>7e92390adc44210002adbc7f5f0ed20f</sys_id><sys_mod_count>4</sys_mod_count><sys_name>Postmaster Email Router</sys_name><sys_overrides/><sys_package/><sys_policy/><sys_replace_on_upgrade>false</sys_replace_on_upgrade><sys_scope display_value="Global">global</sys_scope><sys_update_name>sysevent_in_email_action_7e92390adc44210002adbc7f5f0ed20f</sys_update_name><sys_updated_by>ben.hollifield@snc_SHARE</sys_updated_by><sys_updated_on>2016-06-13 22:40:51</sys_updated_on><table>task</table><template/><type>new</type></sysevent_in_email_action></record_update>
